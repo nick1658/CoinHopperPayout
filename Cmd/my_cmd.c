@@ -543,7 +543,6 @@ static int do_help (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 int do_set (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {	
 	uint16_t data_temp;
-	uint16_t ch_tmp;
 	switch (argc){
 		case 3:
 			if (strcmp (argv[1], "led1") == 0){
@@ -561,31 +560,6 @@ int do_set (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			}else if (strcmp (argv[1], "power") == 0){
 				data_temp = simple_strtoul(argv[2], NULL, 10);
 				SHDL = data_temp&0x01;
-				break;
-			}
-			break;
-		case 4:
-			if (strcmp (argv[1], "da") == 0){
-				ch_tmp = simple_strtoul(argv[2], NULL, 10);
-				data_temp = simple_strtoul (argv[3], NULL, 10);
-				if ((ch_tmp < 12)){//0-11通道
-					if (ad8804_env.da_value[ch_tmp] != data_temp){
-						if (data_temp < 256){//设定值操作
-							ad8804_env.da_value[ch_tmp] = data_temp;
-							ad8804_write_ch (ad8804_env.da_addr[ch_tmp], data_temp);
-						}else if (data_temp == 256){//在当前值基础递减操作
-							if (ad8804_env.da_value[ch_tmp] > 0){
-								ad8804_env.da_value[ch_tmp]--;
-							}
-							ad8804_write_ch (ad8804_env.da_addr[ch_tmp], ad8804_env.da_value[ch_tmp]);
-						}else if (data_temp > 256){//在当前值基础递增操作
-							if (ad8804_env.da_value[ch_tmp] < 255){
-								ad8804_env.da_value[ch_tmp]++;
-							}
-							ad8804_write_ch (ad8804_env.da_addr[ch_tmp], ad8804_env.da_value[ch_tmp]);
-						}
-					}
-				}
 				break;
 			}
 			break;

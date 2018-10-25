@@ -18,10 +18,13 @@
 #include "stm32f10x.h"
 #include "my_cmd.h"
 
-#include "ad8804.h"
+#include "led.h"
 #include "delay.h"
 #include "sys.h"
-#include "usart.h"
+#include "usart1.h"
+#include "usart2.h"
+#include "usart3.h"
+#include "usart4.h"
 
 
 
@@ -68,10 +71,14 @@
 #define EXT8_INT_SUB 1
 #define EXT11_INT_PREEM INT_GROUP_2
 #define EXT11_INT_SUB 1
+#define UART4_RX_INT_PREEM INT_GROUP_2
+#define UART4_RX_INT_SUB 3
 #define UART3_RX_INT_PREEM INT_GROUP_2
 #define UART3_RX_INT_SUB 2
+#define UART2_RX_INT_PREEM INT_GROUP_2
+#define UART2_RX_INT_SUB 1
 #define UART1_RX_INT_PREEM INT_GROUP_2
-#define UART1_RX_INT_SUB 3
+#define UART1_RX_INT_SUB 0
 #define DMA1_5_INT_PREEM INT_GROUP_2
 #define DMA1_5_INT_SUB 3
 

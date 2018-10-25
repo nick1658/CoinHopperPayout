@@ -46,7 +46,7 @@ void uart1_dma_config (void)
     //外设地址  
     DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)(&USART1->DR);  
     //内存地址  
-    DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)cmd_analyze.rec_buf;  
+    DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)cmd_analyze.rec_buf1;  
     //dma传输方向单向  
     DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;  
     //设置DMA在传输时缓冲区的长度  
@@ -109,7 +109,7 @@ void DMA1_Channel5_IRQHandler(void)
 		//清除标志位  
 		DMA_ClearFlag(DMA1_FLAG_TC5);//清除通道4传输完成标志
 		DMA_ClearITPendingBit(DMA1_IT_GL5); //清除全部中断标志 
-		my_env.uart_receive_finished = 2;
+		my_env.uart_receive_finished1 = 2;
 	}
 #if SYSTEM_SUPPORT_OS 	//如果SYSTEM_SUPPORT_OS为真，则需要支持OS.
 	OSIntExit();  											 
@@ -181,7 +181,7 @@ void stop_uart1_receive (void)
 void start_uart1_receive (void)
 {        
 	//设置传输数据长度  
-	memset (cmd_analyze.rec_buf, 0, CMD_BUF_LEN);
+	memset (cmd_analyze.rec_buf1, 0, CMD_BUF_LEN);
 	DMA_Cmd(DMA1_Channel5,DISABLE);
 	DMA_SetCurrDataCounter(DMA1_Channel5, CMD_BUF_LEN);  
 	DMA_Cmd(DMA1_Channel5,ENABLE);
@@ -202,7 +202,7 @@ void USART1_IRQHandler(void)
 		temp = USART1->SR;  
 		temp = USART1->DR; //清USART_IT_IDLE标志  
 		temp = temp;
-		my_env.uart_receive_finished = 1;
+		my_env.uart_receive_finished1 = 1;
 	}   
 #if SYSTEM_SUPPORT_OS 	//如果SYSTEM_SUPPORT_OS为真，则需要支持OS.
 	OSIntExit();  											 

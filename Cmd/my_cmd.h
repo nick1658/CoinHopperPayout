@@ -79,6 +79,10 @@ typedef struct
 typedef struct 
 {  
 	char rec_buf[CMD_BUF_LEN];            //接收命令缓冲区  
+	char rec_buf1[CMD_BUF_LEN];            //接收命令缓冲区  
+	char rec_buf2[CMD_BUF_LEN];            //接收命令缓冲区  
+	char rec_buf3[CMD_BUF_LEN];            //接收命令缓冲区  
+	char rec_buf4[CMD_BUF_LEN];            //接收命令缓冲区  
 	char processed_buf[CMD_BUF_LEN];      //存储加工后的命令(去除控制字符)  
 	int32_t cmd_arg[ARG_NUM];             //保存命令的参数  
 }cmd_analyze_struct;  
@@ -86,7 +90,10 @@ typedef struct
 
 typedef struct
 {
-	U16 uart_receive_finished;
+	U16 uart_receive_finished1;
+	U16 uart_receive_finished2;
+	U16 uart_receive_finished3;
+	U16 uart_receive_finished4;
 }s_system_env;
 
 typedef struct
