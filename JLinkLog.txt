@@ -1,0 +1,28 @@
+
+T63DC 000:044 SEGGER J-Link V6.10i Log File (0001ms, 0027ms total)
+T63DC 000:044 DLL Compiled: Oct 25 2016 19:31:51 (0001ms, 0027ms total)
+T63DC 000:044 Logging started @ 2018-10-25 15:48 (0001ms, 0027ms total)
+T63DC 000:045 JLINK_SetWarnOutHandler(...) (0000ms, 0027ms total)
+T63DC 000:045 JLINK_OpenEx(...)
+Firmware: J-Link ARM V8 compiled Nov 28 2014 13:44:46
+Hardware: V8.00
+S/N: 12345678
+Feature(s): RDI,FlashDL,FlashBP,JFlash,GDBFULLWEBSRV Webserver running on local port 19080 (0020ms, 0047ms total)
+T63DC 000:045   returns O.K. (0020ms, 0047ms total)
+T63DC 000:065 JLINK_SetErrorOutHandler(...) (0000ms, 0047ms total)
+T63DC 000:065 JLINK_ExecCommand("ProjectFile = "D:\Keil5Projects\STM32Projects\CounterEmitter\JLinkSettings.ini"", ...).   returns 0x00 (0081ms, 0128ms total)
+T63DC 000:147 JLINK_ExecCommand("Device = STM32F103RC", ...). Device "STM32F103RC" selected.  returns 0x00 (0001ms, 0129ms total)
+T63DC 000:148 JLINK_ExecCommand("DisableConnectionTimeout", ...).   returns 0x01 (0000ms, 0129ms total)
+T63DC 000:148 JLINK_GetHardwareVersion()  returns 0x13880 (0000ms, 0129ms total)
+T63DC 000:148 JLINK_GetDLLVersion()  returns 61009 (0000ms, 0129ms total)
+T63DC 000:148 JLINK_GetFirmwareString(...) (0000ms, 0129ms total)
+T63DC 000:150 JLINK_GetDLLVersion()  returns 61009 (0000ms, 0129ms total)
+T63DC 000:150 JLINK_GetCompileDateTime() (0000ms, 0129ms total)
+T63DC 000:151 JLINK_GetFirmwareString(...) (0000ms, 0129ms total)
+T63DC 000:152 JLINK_GetHardwareVersion()  returns 0x13880 (0000ms, 0129ms total)
+T63DC 000:155 JLINK_TIF_Select(JLINKARM_TIF_SWD)  returns 0x00 (0005ms, 0134ms total)
+T63DC 000:160 JLINK_SetSpeed(50000) (0001ms, 0135ms total)
+T63DC 000:161 JLINK_GetId()  returns 0x00000000 (0001ms, 0136ms total)
+T63DC 001:692 JLINK_Close() (0006ms, 0142ms total)
+T63DC 001:692  (0006ms, 0142ms total)
+T63DC 001:692 Closed (0006ms, 0142ms total)
