@@ -40,7 +40,7 @@ void uart4_dma_config (void)
 	
 	//串口收DMA配置    
     //启动DMA时钟  
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);  
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA2, ENABLE);  
     //DMA1通道5配置  
     DMA_DeInit(DMA2_Channel3);  
     //外设地址  
@@ -134,7 +134,8 @@ void uart4_init (void)
 	USART_InitTypeDef USART_InitStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
 	 
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART4|RCC_APB2Periph_GPIOC, ENABLE);	//使能UART4，GPIOA时钟
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART4, ENABLE);	//使能UART4时钟
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);	 //使能PC端口时钟
   
 	//UART4_TX   GPIOC.10
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10; //PC.10
@@ -146,6 +147,9 @@ void uart4_init (void)
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;//PC.11
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;//浮空输入
 	GPIO_Init(GPIOC, &GPIO_InitStructure);//初始化GPIOC.11
+	
+	RCC_APB1PeriphResetCmd(RCC_APB1Periph_UART4,ENABLE);
+	RCC_APB1PeriphResetCmd(RCC_APB1Periph_UART4,DISABLE);
 
 	//Usart1 NVIC 配置
 	NVIC_InitStructure.NVIC_IRQChannel = UART4_IRQn;
