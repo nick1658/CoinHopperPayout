@@ -19,6 +19,8 @@ int led_init (void)
 	GPIO_Init(GPIOB, &GPIO_InitStructure);	  				 //推挽输出 ，IO口速度为50MHz
 	GPIO_SetBits(GPIOB,GPIO_Pin_1); 						 //PB.7 输出高 
 	
+	LED0 = 0;
+	LED1 = 0;
 	return 0;
 }
 

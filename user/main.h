@@ -101,6 +101,9 @@
 #define LED1 PBout(1)// PB1
 #define LED2 PBout(9)// PB9
 
+#define LED0_NOT LED0 = !LED0
+#define LED1_NOT LED1 = !LED1
+
 #define SHDL PBout(6)
 #define SPI_CS PAout(4)
 #define SPI_SCK PAout(5)
