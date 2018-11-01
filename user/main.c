@@ -410,9 +410,6 @@ int red_flag_hopper_res_process (u_red_flag_frame *p_frame)
 		{
 			case FINISH_MSG:
 				hopper_env.hopper_dispense_fin_num++;
-				if (hopper_env.hopper_dispense_fin_num >= 3){
-					hopper_env.dispense_timeout = hopper_env.para_dispense_timeout;
-				}
 				send_to_uart_flag = 1;
 				break;
 			case ONE_COIN_MSG:
@@ -423,6 +420,7 @@ int red_flag_hopper_res_process (u_red_flag_frame *p_frame)
 				break;
 			case STATUS_MSG:
 				if ((hopper_env.red_flag_req_flag[p_frame->data.addr] == PAYOUT_REQUEST_LIVE_MSG) && p_frame->data.data > 0){
+					hopper_env.hopper_dispense_fin_num++;
 					p_frame->data.cmd = FINISH_MSG;
 					p_frame->data.data = hopper_env.hopper_payout_num[p_frame->data.addr];
 					hopper_env.red_flag_req_flag[p_frame->data.addr] = 0;
@@ -439,6 +437,9 @@ int red_flag_hopper_res_process (u_red_flag_frame *p_frame)
 				send_to_uart_flag = 1;
 				break;
 			default:break;
+		}
+		if (hopper_env.hopper_dispense_fin_num >= 3){
+			hopper_env.dispense_timeout = hopper_env.para_dispense_timeout;
 		}
 		if (send_to_uart_flag == 1){
 			red_flag_slave_res (p_frame->fill, RED_FLAG_PAYOUT_BUF_LEN);
