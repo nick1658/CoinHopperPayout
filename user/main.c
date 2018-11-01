@@ -21,6 +21,8 @@
 #define STATUS_MSG_SHAFT_FAILED 0x10
 #define STATUS_MSG_BUSY        0x20
 
+#define HOPPER_OFFLINE	 0x80
+
 #define ONE_COIN_MSG 0x07
 #define FINISH_MSG 0x08
 
@@ -56,8 +58,10 @@ typedef struct
 {
 	uint8_t hopper_payout_num[HOPPER_NUM];
 	uint8_t red_flag_req_flag[HOPPER_NUM];
+	uint8_t hopper_offline_flag[HOPPER_NUM];
 	void (*p_uart_send_byte[HOPPER_NUM])(uint8_t ch);
-	uint16_t red_flag_status;
+	uint16_t red_flag_operate_status;
+	uint16_t hopper_dispense_fin_num;
 	uint32_t dispense_timeout;
 	//////////////////para area start/////////////////////
 	uint32_t para_dispense_timeout;
@@ -83,18 +87,9 @@ typedef struct
 
 u_red_flag_frame *p_red_flag_frame;
 s_hopper_env hopper_env;
-
-
 s_uart_send_buf uart_send_buf[UART4_SEND_BUF_NUM];
 s_uart_send_buf_head uart_send_buf_head;
-
-
 uint8_t test_cmd[] = {0x05, 0x10, 0x02, 0x14, 0x01, 0x2c};
-
-
-
-
-
 //init uart4 send buf struct
 void init_uart4_send_buf (void)
 {
@@ -368,6 +363,7 @@ void hopper_env_init (void)
 	hopper_env.p_uart_send_byte[0] = uart1_send_byte;//uart1_send_byte;
 	hopper_env.p_uart_send_byte[1] = uart3_send_byte;//uart2_send_byte;
 	hopper_env.p_uart_send_byte[2] = uart2_send_byte;//uart3_send_byte;
+	hopper_env.hopper_dispense_fin_num = 3;
 	hopper_env.para_dispense_timeout = DISPENSE_TIMEOUT;
 }
 //
@@ -400,7 +396,7 @@ int red_flag_slave_res (uint8_t * buf, uint8_t len)
 	return 0;
 }
 //
-int red_flag_hopper_res (u_red_flag_frame *p_frame)
+int red_flag_hopper_res_process (u_red_flag_frame *p_frame)
 {
 	int i;
 	uint8_t checksum = 0;
@@ -410,30 +406,39 @@ int red_flag_hopper_res (u_red_flag_frame *p_frame)
 	}
 	if (checksum == p_frame->data.checksum){
 		send_to_uart_flag = 0;
-		if (p_frame->data.cmd == FINISH_MSG){
-			send_to_uart_flag = 1;
-		}else if (p_frame->data.cmd == ONE_COIN_MSG){
-			hopper_env.dispense_timeout = hopper_env.para_dispense_timeout;
-			if (hopper_env.hopper_payout_num[p_frame->data.addr] > 0){
-				hopper_env.hopper_payout_num[p_frame->data.addr]--;
-			}
-		}else if (p_frame->data.cmd == STATUS_MSG){
-			if ((hopper_env.red_flag_req_flag[p_frame->data.addr] == PAYOUT_REQUEST_LIVE_MSG) && p_frame->data.data > 0){
-				p_frame->data.cmd = FINISH_MSG;
-				p_frame->data.data = hopper_env.hopper_payout_num[p_frame->data.addr];
-				hopper_env.red_flag_req_flag[p_frame->data.addr] = 0;
+		switch (p_frame->data.cmd)
+		{
+			case FINISH_MSG:
+				hopper_env.hopper_dispense_fin_num++;
+				if (hopper_env.hopper_dispense_fin_num >= 3){
+					hopper_env.dispense_timeout = hopper_env.para_dispense_timeout;
+				}
 				send_to_uart_flag = 1;
-			}else if ((hopper_env.red_flag_req_flag[p_frame->data.addr] == STATUS_REQUEST)){
-				hopper_env.red_flag_req_flag[p_frame->data.addr] = 0;
+				break;
+			case ONE_COIN_MSG:
+				hopper_env.dispense_timeout = DISPENSE_TIMEOUT;
+				if (hopper_env.hopper_payout_num[p_frame->data.addr] > 0){
+					hopper_env.hopper_payout_num[p_frame->data.addr]--;
+				}
+				break;
+			case STATUS_MSG:
+				if ((hopper_env.red_flag_req_flag[p_frame->data.addr] == PAYOUT_REQUEST_LIVE_MSG) && p_frame->data.data > 0){
+					p_frame->data.cmd = FINISH_MSG;
+					p_frame->data.data = hopper_env.hopper_payout_num[p_frame->data.addr];
+					hopper_env.red_flag_req_flag[p_frame->data.addr] = 0;
+					send_to_uart_flag = 1;
+				}else if ((hopper_env.red_flag_req_flag[p_frame->data.addr] == STATUS_REQUEST)){
+					hopper_env.red_flag_req_flag[p_frame->data.addr] = 0;
+					send_to_uart_flag = 1;
+				}
+				break;
+			case ACK_MSG:
+				hopper_env.hopper_offline_flag[p_frame->data.addr] = 0;
+				break;
+			case BUSY_MSG:
 				send_to_uart_flag = 1;
-			}
-		}else if (p_frame->data.cmd == ACK_MSG){
-			if (hopper_env.red_flag_req_flag[p_frame->data.addr] == 1){
-				hopper_env.red_flag_req_flag[p_frame->data.addr] = 0;
-				send_to_uart_flag = 1;
-			}
-		}else if (p_frame->data.cmd == BUSY_MSG){
-			send_to_uart_flag = 1;
+				break;
+			default:break;
 		}
 		if (send_to_uart_flag == 1){
 			red_flag_slave_res (p_frame->fill, RED_FLAG_PAYOUT_BUF_LEN);
@@ -451,7 +456,7 @@ void hopper_task (void)
 		i = 0;
 		while (i < rec_count){
 			p_red_flag_frame = (u_red_flag_frame*)&(cmd_analyze.rec_buf1[i]);
-			red_flag_hopper_res (p_red_flag_frame);
+			red_flag_hopper_res_process (p_red_flag_frame);
 			i += RED_FLAG_PAYOUT_BUF_LEN;
 		}
 		start_uart1_receive ();
@@ -462,7 +467,7 @@ void hopper_task (void)
 		i = 0;
 		while (i < rec_count){
 			p_red_flag_frame = (u_red_flag_frame*)&(cmd_analyze.rec_buf2[i]);
-			red_flag_hopper_res (p_red_flag_frame);
+			red_flag_hopper_res_process (p_red_flag_frame);
 			i += RED_FLAG_PAYOUT_BUF_LEN;
 		}
 		start_uart2_receive ();
@@ -473,14 +478,14 @@ void hopper_task (void)
 		i = 0;
 		while (i < rec_count){
 			p_red_flag_frame = (u_red_flag_frame*)&(cmd_analyze.rec_buf3[i]);
-			red_flag_hopper_res (p_red_flag_frame);
+			red_flag_hopper_res_process (p_red_flag_frame);
 			i += RED_FLAG_PAYOUT_BUF_LEN;
 		}
 		start_uart3_receive ();
 	}
 }
 //
-int red_flag_frame_process (u_red_flag_frame *p_frame)
+int red_flag_master_msg_process (u_red_flag_frame *p_frame)
 {
 	int i;
 	uint8_t checksum = 0;
@@ -495,8 +500,14 @@ int red_flag_frame_process (u_red_flag_frame *p_frame)
 		{
 			case PAYOUT_REQUEST_LIVE_MSG:
 				if (p_frame->data.addr < HOPPER_NUM){
+					if (p_frame->data.data > 0){
+						if (hopper_env.hopper_dispense_fin_num > 0){
+							hopper_env.hopper_dispense_fin_num--;
+						}
+					}
+					hopper_env.hopper_offline_flag[p_frame->data.addr] = HOPPER_OFFLINE;
 					hopper_env.hopper_payout_num[p_frame->data.addr] = p_frame->data.data;
-					hopper_env.red_flag_status = PAYOUT_REQUEST_LIVE_MSG;
+					hopper_env.red_flag_operate_status = PAYOUT_REQUEST_LIVE_MSG;
 				}else {//²ÎÊýÅäÖÃ
 					switch (p_frame->data.addr)
 					{
@@ -519,9 +530,6 @@ int red_flag_frame_process (u_red_flag_frame *p_frame)
 		}
 	}
 	send_to_uart_buf (&(p_frame->fill[0]));
-//	for (i = 0; i < RED_FLAG_PAYOUT_BUF_LEN; i++){ 
-//		hopper_env.p_uart_send_byte[p_frame->data.addr](p_frame->fill[i]); 
-//	} 
 	return 0;
 }
 void dispense_task (void)
@@ -534,7 +542,7 @@ void dispense_task (void)
 		i = 0;
 		while (i < rec_count){
 			p_red_flag_frame = (u_red_flag_frame*)&(cmd_analyze.rec_buf4[i]);
-			red_flag_frame_process (p_red_flag_frame);
+			red_flag_master_msg_process (p_red_flag_frame);
 			i += RED_FLAG_PAYOUT_BUF_LEN;
 		}
 		start_uart4_receive ();
@@ -552,15 +560,15 @@ void fin_dispense_op (void)
 //
 void timer_1ms_task (void)
 {
-	if (hopper_env.red_flag_status == PAYOUT_REQUEST_LIVE_MSG){
-		hopper_env.red_flag_status = 0;
-		hopper_env.dispense_timeout = hopper_env.para_dispense_timeout;
-	}
 	if (hopper_env.dispense_timeout > 0){
 		hopper_env.dispense_timeout--;
 		if (hopper_env.dispense_timeout == 0){
 			fin_dispense_op ();
 		}
+	}
+	if (hopper_env.red_flag_operate_status == PAYOUT_REQUEST_LIVE_MSG){
+		hopper_env.red_flag_operate_status = 0;
+		hopper_env.dispense_timeout = DISPENSE_TIMEOUT;
 	}
 	if (uart_send_buf_head.last_send_timeout > 0){
 		uart_send_buf_head.last_send_timeout--;
