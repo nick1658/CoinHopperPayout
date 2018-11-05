@@ -410,6 +410,10 @@ int red_flag_hopper_res_process (u_red_flag_frame *p_frame)
 		{
 			case FINISH_MSG:
 				hopper_env.hopper_dispense_fin_num++;
+				hopper_env.red_flag_req_flag[p_frame->data.addr] = 0;
+				if (hopper_env.hopper_dispense_fin_num >= 3){
+					hopper_env.dispense_timeout = hopper_env.para_dispense_timeout;
+				}
 				send_to_uart_flag = 1;
 				break;
 			case ONE_COIN_MSG:
@@ -419,8 +423,13 @@ int red_flag_hopper_res_process (u_red_flag_frame *p_frame)
 				}
 				break;
 			case STATUS_MSG:
-				if ((hopper_env.red_flag_req_flag[p_frame->data.addr] == PAYOUT_REQUEST_LIVE_MSG) && p_frame->data.data > 0){
+				if (((hopper_env.red_flag_req_flag[p_frame->data.addr] == PAYOUT_REQUEST_LIVE_MSG)
+					|| (hopper_env.red_flag_req_flag[p_frame->data.addr] == EMPTY_HOPPER)
+					) && p_frame->data.data > 0){
 					hopper_env.hopper_dispense_fin_num++;
+					if (hopper_env.hopper_dispense_fin_num >= 3){
+						hopper_env.dispense_timeout = hopper_env.para_dispense_timeout;
+					}
 					p_frame->data.cmd = FINISH_MSG;
 					p_frame->data.data = hopper_env.hopper_payout_num[p_frame->data.addr];
 					hopper_env.red_flag_req_flag[p_frame->data.addr] = 0;
@@ -437,9 +446,6 @@ int red_flag_hopper_res_process (u_red_flag_frame *p_frame)
 				send_to_uart_flag = 1;
 				break;
 			default:break;
-		}
-		if (hopper_env.hopper_dispense_fin_num >= 3){
-			hopper_env.dispense_timeout = hopper_env.para_dispense_timeout;
 		}
 		if (send_to_uart_flag == 1){
 			red_flag_slave_res (p_frame->fill, RED_FLAG_PAYOUT_BUF_LEN);
@@ -524,6 +530,12 @@ int red_flag_master_msg_process (u_red_flag_frame *p_frame)
 			case STATUS_REQUEST:
 				break;
 			case EMPTY_HOPPER:
+				for (i = 0; i < HOPPER_NUM; i++){
+					hopper_env.hopper_payout_num[i] = p_frame->data.data;
+				}
+				if (hopper_env.hopper_dispense_fin_num > 0){
+					hopper_env.hopper_dispense_fin_num--;
+				}
 				break;
 			case RESET_REQUEST:
 				break;
@@ -556,6 +568,8 @@ void fin_dispense_op (void)
 	if (send_to_uart_buf(buf) == 0){//返回0，表示发送不成功
 		hopper_env.dispense_timeout = 200;//200ms 后重试
 	}
+	
+	hopper_env.hopper_dispense_fin_num = HOPPER_NUM;
 	LED0 = 0;
 }
 //
@@ -608,8 +622,8 @@ void timer_task (uint32_t time )
 }
 void uart_send_task (void)
 {
-	if (uart_send_buf_head.used_buf_ctr > 0){
-		if (uart_send_buf_head.last_send_timeout == 0){
+	if (uart_send_buf_head.last_send_timeout == 0){
+		if (uart_send_buf_head.used_buf_ctr > 0){
 			send_first_buf_data_use_uart ();
 		}
 	}
