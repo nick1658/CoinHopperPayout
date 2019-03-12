@@ -38,6 +38,7 @@
 
 
 #define DISPENSE_TIMEOUT (12*1000)
+#define COMMUNICATION_TIMEOUT (2*1000)
 
 typedef struct
 {
@@ -58,11 +59,12 @@ typedef struct
 {
 	uint8_t hopper_payout_num[HOPPER_NUM];
 	uint8_t red_flag_req_flag[HOPPER_NUM];
-	uint8_t hopper_offline_flag[HOPPER_NUM];
+//	uint8_t hopper_offline_flag[HOPPER_NUM];
 	void (*p_uart_send_byte[HOPPER_NUM])(uint8_t ch);
 	uint16_t red_flag_operate_status;
 	uint16_t hopper_dispense_fin_num;
 	uint32_t dispense_timeout;
+	uint32_t communication_timeout;
 	//////////////////para area start/////////////////////
 	uint32_t para_dispense_timeout;
 	//////////////////para area end/////////////////////
@@ -107,7 +109,7 @@ void init_uart4_send_buf (void)
 		p_tmp = &uart_send_buf[i];
 	}
 }
-
+//
 s_uart_send_buf * get_free_uart_send_buf (void)
 {
 	static uint16_t buf_id = 0;
@@ -120,7 +122,7 @@ s_uart_send_buf * get_free_uart_send_buf (void)
 	}
 	return p_tmp;
 }
-
+//
 void return_uart_send_buf (s_uart_send_buf * p_buf)
 {
 	p_buf->buf_id = 0;
@@ -128,7 +130,7 @@ void return_uart_send_buf (s_uart_send_buf * p_buf)
 	uart_send_buf_head.p_first_free_buf = p_buf;
 	uart_send_buf_head.free_buf_ctr++;
 }
-
+//
 void insert_to_send_Q (s_uart_send_buf * p_buf)
 {
 	if (uart_send_buf_head.used_buf_ctr == 0){
@@ -141,6 +143,7 @@ void insert_to_send_Q (s_uart_send_buf * p_buf)
 	p_buf->p_next_buf = 0;
 	uart_send_buf_head.used_buf_ctr++;
 }
+//
 void remove_first_item_from_send_Q (void)
 {
 	s_uart_send_buf * p_tmp;
@@ -154,7 +157,7 @@ void remove_first_item_from_send_Q (void)
 		return_uart_send_buf(p_tmp);
 	}
 }
-
+//
 uint32_t send_to_uart_buf(uint8_t *buf)
 {
 	uint8_t i;	
@@ -170,7 +173,7 @@ uint32_t send_to_uart_buf(uint8_t *buf)
 		return 0;
 	}
 }
-
+//
 void test_uart_send_buf (void)
 {
 	s_uart_send_buf * p_buf;
@@ -213,7 +216,6 @@ void test_uart_send_buf (void)
 //PWM输出初始化
 //arr：自动重装值
 //psc：时钟预分频数
-
 #define TIM3_ARR  999
 #define TIM3_PSC  71
 void TIM3_PWM_Init(u16 arr,u16 psc)
@@ -249,7 +251,6 @@ void TIM3_PWM_Init(u16 arr,u16 psc)
  
 	TIM_Cmd(TIM3, ENABLE);  //使能TIM3
 }
-
 //定时器3中断服务程序
 static u16 tim3_count = 0;
 void TIM3_IRQHandler(void)   //TIM3中断
@@ -298,6 +299,16 @@ void send_to_uart3 (uint8_t * buf, uint8_t len)
 		uart3_send_byte (buf[i]); 
 	}
 }
+
+void send_to_all_hopper_use_uart (uint8_t * buf, uint8_t len)
+{
+	uint8_t i;
+	for (i = 0; i < len; i++){ 
+		uart1_send_byte (buf[i]); 
+		uart2_send_byte (buf[i]); 
+		uart3_send_byte (buf[i]); 
+	}
+}
 void send_to_uart4 (uint8_t * buf, uint8_t len)
 {
 	uint8_t i;
@@ -315,9 +326,10 @@ void send_first_buf_data_use_uart()
 			send_to_uart4 (&(uart_send_buf_head.p_send_first_buf->frame_buf.fill[0]), RED_FLAG_PAYOUT_BUF_LEN);
 			break;
 		case RED_FLAG_SEND_TO_SLAVE:
-			send_to_uart1 (&(uart_send_buf_head.p_send_first_buf->frame_buf.fill[0]), RED_FLAG_PAYOUT_BUF_LEN);
-			send_to_uart2 (&(uart_send_buf_head.p_send_first_buf->frame_buf.fill[0]), RED_FLAG_PAYOUT_BUF_LEN);
-			send_to_uart3 (&(uart_send_buf_head.p_send_first_buf->frame_buf.fill[0]), RED_FLAG_PAYOUT_BUF_LEN);
+			send_to_all_hopper_use_uart (&(uart_send_buf_head.p_send_first_buf->frame_buf.fill[0]), RED_FLAG_PAYOUT_BUF_LEN);
+//			send_to_uart1 (&(uart_send_buf_head.p_send_first_buf->frame_buf.fill[0]), RED_FLAG_PAYOUT_BUF_LEN);
+//			send_to_uart2 (&(uart_send_buf_head.p_send_first_buf->frame_buf.fill[0]), RED_FLAG_PAYOUT_BUF_LEN);
+//			send_to_uart3 (&(uart_send_buf_head.p_send_first_buf->frame_buf.fill[0]), RED_FLAG_PAYOUT_BUF_LEN);
 			break;
 		default: break;
 	}
@@ -334,23 +346,23 @@ void test_red_flag (void)
 //	uart1_send_byte ('1');
 //	uart2_send_byte ('2');
 //	uart3_send_byte ('3');
-	i = '4';
-	do
-	{
-		delay_ms(100);
-		uart4_send_byte (i++);
-		if (i > '9')
-		i = '0';
-	}while (0);
-//	for (i = 0; i < sizeof (test_cmd); i++){
-//		uart1_send_byte (test_cmd[i]);
-//	}
-//	for (i = 0; i < sizeof (test_cmd); i++){
-//		uart2_send_byte (test_cmd[i]);
-//	}
-//	for (i = 0; i < sizeof (test_cmd); i++){
-//		uart3_send_byte (test_cmd[i]);
-//	}
+//	i = '4';
+//	do
+//	{
+//		delay_ms(100);
+//		uart4_send_byte (i++);
+//		if (i > '9')
+//		i = '0';
+//	}while (0);
+	for (i = 0; i < sizeof (test_cmd); i++){
+		uart1_send_byte (test_cmd[i]);
+	}
+	for (i = 0; i < sizeof (test_cmd); i++){
+		uart2_send_byte (test_cmd[i]);
+	}
+	for (i = 0; i < sizeof (test_cmd); i++){
+		uart3_send_byte (test_cmd[i]);
+	}
 }
 
 void hopper_env_init (void)
@@ -440,7 +452,7 @@ int red_flag_hopper_res_process (u_red_flag_frame *p_frame)
 				}
 				break;
 			case ACK_MSG:
-				hopper_env.hopper_offline_flag[p_frame->data.addr] = 0;
+//				hopper_env.hopper_offline_flag[p_frame->data.addr] = 0;
 				break;
 			case BUSY_MSG:
 				send_to_uart_flag = 1;
@@ -512,7 +524,7 @@ int red_flag_master_msg_process (u_red_flag_frame *p_frame)
 							hopper_env.hopper_dispense_fin_num--;
 						}
 					}
-					hopper_env.hopper_offline_flag[p_frame->data.addr] = HOPPER_OFFLINE;
+//					hopper_env.hopper_offline_flag[p_frame->data.addr] = HOPPER_OFFLINE;
 					hopper_env.hopper_payout_num[p_frame->data.addr] = p_frame->data.data;
 					hopper_env.red_flag_operate_status = PAYOUT_REQUEST_LIVE_MSG;
 				}else {//参数配置
@@ -528,8 +540,10 @@ int red_flag_master_msg_process (u_red_flag_frame *p_frame)
 			case REMAINING_COINS_REQUEST:
 				break;
 			case STATUS_REQUEST:
+				hopper_env.red_flag_operate_status = STATUS_REQUEST;
 				break;
 			case EMPTY_HOPPER:
+				hopper_env.red_flag_operate_status = EMPTY_HOPPER;
 				for (i = 0; i < HOPPER_NUM; i++){
 					hopper_env.hopper_payout_num[i] = p_frame->data.data;
 				}
@@ -548,11 +562,15 @@ int red_flag_master_msg_process (u_red_flag_frame *p_frame)
 void dispense_task (void)
 {
 	uint32_t i = 0;
+	uint8_t buf[RED_FLAG_PAYOUT_BUF_LEN];
 	//找零操作
 	if (my_env.uart_receive_finished4 == 1){
+		//LED0_NOT;
 		my_env.uart_receive_finished4 = 0;	
 		rec_count = CMD_BUF_LEN - DMA_GetCurrDataCounter(DMA2_Channel3); 
 		i = 0;
+		FILL_RED_FLAG_SLAVE_FRAME (buf, 0xFF, ACK_MSG, 0);
+		send_to_uart_buf (buf);
 		while (i < rec_count){
 			p_red_flag_frame = (u_red_flag_frame*)&(cmd_analyze.rec_buf4[i]);
 			red_flag_master_msg_process (p_red_flag_frame);
@@ -573,6 +591,17 @@ void fin_dispense_op (void)
 	LED0 = 0;
 }
 //
+void fin_res_status_op (void)
+{
+	uint8_t buf[RED_FLAG_PAYOUT_BUF_LEN];
+	FILL_RED_FLAG_SLAVE_FRAME (buf, 0x80, FINISH_MSG, 0);
+	if (send_to_uart_buf(buf) == 0){//返回0，表示发送不成功
+		hopper_env.dispense_timeout = 200;//200ms 后重试
+	}
+	hopper_env.hopper_dispense_fin_num = HOPPER_NUM;
+	LED0 = 0;
+}
+//
 void timer_1ms_task (void)
 {
 	if (hopper_env.dispense_timeout > 0){
@@ -581,9 +610,20 @@ void timer_1ms_task (void)
 			fin_dispense_op ();
 		}
 	}
-	if (hopper_env.red_flag_operate_status == PAYOUT_REQUEST_LIVE_MSG){
+	if (hopper_env.communication_timeout > 0){
+		hopper_env.communication_timeout--;
+		if (hopper_env.communication_timeout == 0){
+			fin_res_status_op ();
+		}
+	}
+	if ((hopper_env.red_flag_operate_status == PAYOUT_REQUEST_LIVE_MSG) ||
+			(hopper_env.red_flag_operate_status == EMPTY_HOPPER)){
 		hopper_env.red_flag_operate_status = 0;
 		hopper_env.dispense_timeout = DISPENSE_TIMEOUT;
+	}
+	if ((hopper_env.red_flag_operate_status == STATUS_REQUEST)){
+		hopper_env.red_flag_operate_status = 0;
+		hopper_env.communication_timeout = COMMUNICATION_TIMEOUT;
 	}
 	if (uart_send_buf_head.last_send_timeout > 0){
 		uart_send_buf_head.last_send_timeout--;
@@ -592,11 +632,14 @@ void timer_1ms_task (void)
 
 void timer_500ms_task (void)
 {
-	uint8_t buf[RED_FLAG_PAYOUT_BUF_LEN];
+//	uint8_t buf[RED_FLAG_PAYOUT_BUF_LEN];
 	if (hopper_env.dispense_timeout > 0){
 		LED0_NOT;
-		FILL_RED_FLAG_SLAVE_FRAME (buf, 0xFF, ACK_MSG, 0);
-		send_to_uart_buf (buf);
+		//FILL_RED_FLAG_SLAVE_FRAME (buf, 0xFF, ACK_MSG, 0);
+		//send_to_uart_buf (buf);
+	}
+	if (hopper_env.communication_timeout > 0){
+		LED0_NOT;
 	}
 }
 //

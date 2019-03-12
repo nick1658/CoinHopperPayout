@@ -23,7 +23,7 @@ void uart3_send_byte (uint8_t ch)
 	//一个一个发送字符
 	USART_SendData(USART3, (unsigned char) ch);
 	//等待发送完成
-	while(USART_GetFlagStatus(USART3,USART_FLAG_TC)!=SET);
+//	while(USART_GetFlagStatus(USART3,USART_FLAG_TC)!=SET);
 }
 
 void uart3_puts(const char *s)
