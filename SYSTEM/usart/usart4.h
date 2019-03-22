@@ -1,7 +1,7 @@
 #ifndef __USART4_H
 #define __USART4_H
 
-#define UART4_BOUND_RATE 115200
+#define UART4_BOUND_RATE 9600
 #define EN_UART4_RX 1
 
 void uart4_send_byte (uint8_t ch);

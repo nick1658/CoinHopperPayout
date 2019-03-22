@@ -555,7 +555,7 @@ int do_set (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 				break;
 			}else if (strcmp (argv[1], "led3") == 0){
 				data_temp = simple_strtoul(argv[2], NULL, 10);
-				LED2 = data_temp&0x01;
+				//LED2 = data_temp&0x01;
 				break;
 			}else if (strcmp (argv[1], "power") == 0){
 				data_temp = simple_strtoul(argv[2], NULL, 10);

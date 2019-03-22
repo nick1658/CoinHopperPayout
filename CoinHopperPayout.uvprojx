@@ -338,7 +338,7 @@
               <MiscControls></MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>.\SYSTEM\sys;.\SYSTEM\delay;.\SYSTEM\usart;.\user;.\SYSTEM\timer;.\Cmd</IncludePath>
+              <IncludePath>.\SYSTEM\sys;.\SYSTEM\delay;.\SYSTEM\usart;.\user;.\SYSTEM\timer;.\Cmd;.\SYSTEM\spi</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -427,6 +427,46 @@
               <FileType>1</FileType>
               <FilePath>.\SYSTEM\usart\usart4.c</FilePath>
             </File>
+            <File>
+              <FileName>usart1.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\SYSTEM\usart\usart1.h</FilePath>
+            </File>
+            <File>
+              <FileName>usart2.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\SYSTEM\usart\usart2.h</FilePath>
+            </File>
+            <File>
+              <FileName>usart3.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\SYSTEM\usart\usart3.h</FilePath>
+            </File>
+            <File>
+              <FileName>usart4.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\SYSTEM\usart\usart4.h</FilePath>
+            </File>
+            <File>
+              <FileName>usart5.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\SYSTEM\usart\usart5.h</FilePath>
+            </File>
+            <File>
+              <FileName>usart5.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\SYSTEM\usart\usart5.c</FilePath>
+            </File>
+            <File>
+              <FileName>spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\SYSTEM\spi\spi.c</FilePath>
+            </File>
+            <File>
+              <FileName>spi.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\SYSTEM\spi\spi.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -483,6 +523,12 @@
         </targetInfos>
       </component>
       <component Cclass="Device" Cgroup="StdPeriph Drivers" Csub="RCC" Cvendor="Keil" Cversion="3.5.0" condition="STM32F1xx STDPERIPH">
+        <package name="STM32F1xx_DFP" schemaVersion="1.4.0" url="http://www.keil.com/pack/" vendor="Keil" version="2.2.0"/>
+        <targetInfos>
+          <targetInfo name="Target 1"/>
+        </targetInfos>
+      </component>
+      <component Cclass="Device" Cgroup="StdPeriph Drivers" Csub="SPI" Cvendor="Keil" Cversion="3.5.0" condition="STM32F1xx STDPERIPH RCC">
         <package name="STM32F1xx_DFP" schemaVersion="1.4.0" url="http://www.keil.com/pack/" vendor="Keil" version="2.2.0"/>
         <targetInfos>
           <targetInfo name="Target 1"/>

@@ -31,7 +31,7 @@
 
 
 #define RED_FLAG_PAYOUT_BUF_LEN 6
-#define HOPPER_NUM 3
+#define HOPPER_NUM 5
 
 #define UART4_SEND_BUF_NUM 64
 #define UART_SEND_TIMEOUT 50
@@ -316,6 +316,23 @@ void send_to_uart4 (uint8_t * buf, uint8_t len)
 		uart4_send_byte (buf[i]); 
 	}
 }
+void send_to_spi3 (uint8_t * buf, uint8_t len)
+{
+	uint8_t i;
+	PAout(15) = 0;
+	PAout(15) = 0;
+	PAout(15) = 0;
+	PAout(15) = 0;
+	PAout(15) = 0;
+	PAout(15) = 0;
+	//PAout(15) = 1;
+	PAout(15) = 0;
+	PAout(15) = 0;
+	for (i = 0; i < len; i++){ 
+		SPI3_ReadWriteByte (buf[i]); 
+	}
+	PAout(15) = 1;
+}
 void send_first_buf_data_use_uart()
 {
 	uint8_t send_dir = 0;
@@ -323,7 +340,8 @@ void send_first_buf_data_use_uart()
 	switch (send_dir)
 	{
 		case RED_FLAG_SEND_TO_MASTER:
-			send_to_uart4 (&(uart_send_buf_head.p_send_first_buf->frame_buf.fill[0]), RED_FLAG_PAYOUT_BUF_LEN);
+//			send_to_uart4 (&(uart_send_buf_head.p_send_first_buf->frame_buf.fill[0]), RED_FLAG_PAYOUT_BUF_LEN);
+			send_to_spi3 (&(uart_send_buf_head.p_send_first_buf->frame_buf.fill[0]), RED_FLAG_PAYOUT_BUF_LEN);
 			break;
 		case RED_FLAG_SEND_TO_SLAVE:
 			send_to_all_hopper_use_uart (&(uart_send_buf_head.p_send_first_buf->frame_buf.fill[0]), RED_FLAG_PAYOUT_BUF_LEN);
@@ -363,6 +381,12 @@ void test_red_flag (void)
 	for (i = 0; i < sizeof (test_cmd); i++){
 		uart3_send_byte (test_cmd[i]);
 	}
+	for (i = 0; i < sizeof (test_cmd); i++){
+		uart4_send_byte (test_cmd[i]);
+	}
+	for (i = 0; i < sizeof (test_cmd); i++){
+		uart5_send_byte (test_cmd[i]);
+	}
 }
 
 void hopper_env_init (void)
@@ -387,6 +411,9 @@ void user_init (void)
 	uart2_init ();
 	uart3_init ();
 	uart4_init ();
+	uart5_init ();
+	//SPI1_Init ();
+	SPI3_Init ();
 	TIM3_PWM_Init (TIM3_ARR, TIM3_PSC); //1ms
 	hopper_env_init ();
 	led_init();		  	//初始化与LED连接的硬件接口
@@ -502,6 +529,31 @@ void hopper_task (void)
 		}
 		start_uart3_receive ();
 	}
+	if (my_env.uart_receive_finished4 == 1){
+		my_env.uart_receive_finished4 = 0;	
+		rec_count = CMD_BUF_LEN - DMA_GetCurrDataCounter(DMA2_Channel3); 
+		i = 0;
+		while (i < rec_count){
+			p_red_flag_frame = (u_red_flag_frame*)&(cmd_analyze.rec_buf4[i]);
+			red_flag_hopper_res_process (p_red_flag_frame);
+			i += RED_FLAG_PAYOUT_BUF_LEN;
+		}
+		start_uart4_receive ();
+	}
+	if (my_env.uart_receive_finished5 == 1){
+		my_env.uart_receive_finished5 = 0;	
+		rec_count = cmd_analyze.uart5_ctr; 
+		cmd_analyze.rec_buf_temp_index += rec_count;
+		cmd_analyze.uart5_ctr = 0;
+		i = 0;
+		while (i < rec_count){
+			p_red_flag_frame = (u_red_flag_frame*)&(cmd_analyze.rec_buf5[i]);
+			red_flag_hopper_res_process (p_red_flag_frame);
+			i += RED_FLAG_PAYOUT_BUF_LEN;
+		}
+		memset (cmd_analyze.rec_buf5, 0, CMD_BUF_LEN);
+		
+	}
 }
 //
 int red_flag_master_msg_process (u_red_flag_frame *p_frame)
@@ -556,27 +608,45 @@ int red_flag_master_msg_process (u_red_flag_frame *p_frame)
 			default:break;
 		}
 	}
-	send_to_uart_buf (&(p_frame->fill[0]));
+	if (p_frame->data.addr < HOPPER_NUM){
+		send_to_uart_buf (&(p_frame->fill[0]));
+	}
 	return 0;
 }
 void dispense_task (void)
 {
 	uint32_t i = 0;
-	uint8_t buf[RED_FLAG_PAYOUT_BUF_LEN];
+//	uint8_t buf[RED_FLAG_PAYOUT_BUF_LEN];
 	//找零操作
-	if (my_env.uart_receive_finished4 == 1){
-		//LED0_NOT;
-		my_env.uart_receive_finished4 = 0;	
-		rec_count = CMD_BUF_LEN - DMA_GetCurrDataCounter(DMA2_Channel3); 
+	/*
+//	if (my_env.uart_receive_finished4 == 1){
+//		//LED0_NOT;
+//		my_env.uart_receive_finished4 = 0;	
+//		rec_count = CMD_BUF_LEN - DMA_GetCurrDataCounter(DMA2_Channel3); 
+//		i = 0;
+//		FILL_RED_FLAG_SLAVE_FRAME (buf, 0xFF, ACK_MSG, 0);
+//		send_to_uart_buf (buf);
+//		while (i < rec_count){
+//			p_red_flag_frame = (u_red_flag_frame*)&(cmd_analyze.rec_buf4[i]);
+//			red_flag_master_msg_process (p_red_flag_frame);
+//			i += RED_FLAG_PAYOUT_BUF_LEN;
+//		}
+//		start_uart4_receive ();
+//	}
+//	
+//	while (SPI_I2S_GetFlagStatus(SPI3, SPI_I2S_FLAG_RXNE) == RESET){ //检查指定的SPI标志位设置与否:接受缓存非空标志位
+//	}*/
+	
+	if (my_env.spi3_receive_finished == 1){
+		my_env.spi3_receive_finished = 0;
 		i = 0;
-		FILL_RED_FLAG_SLAVE_FRAME (buf, 0xFF, ACK_MSG, 0);
-		send_to_uart_buf (buf);
-		while (i < rec_count){
-			p_red_flag_frame = (u_red_flag_frame*)&(cmd_analyze.rec_buf4[i]);
+		while (i < cmd_analyze.spi3_rec_buf_index){
+			p_red_flag_frame = (u_red_flag_frame*)&(cmd_analyze.spi3_rec_buf[i]);
 			red_flag_master_msg_process (p_red_flag_frame);
 			i += RED_FLAG_PAYOUT_BUF_LEN;
 		}
-		start_uart4_receive ();
+		cmd_analyze.spi3_rec_buf_index = 0;
+		memset (cmd_analyze.spi3_rec_buf, 0, CMD_BUF_LEN);
 	}
 }
 void fin_dispense_op (void)
@@ -602,8 +672,67 @@ void fin_res_status_op (void)
 	LED0 = 0;
 }
 //
+void uart_send_task (void)
+{
+	if (uart_send_buf_head.last_send_timeout == 0){
+		if (uart_send_buf_head.used_buf_ctr > 0){
+			send_first_buf_data_use_uart ();
+		}
+	}
+}
+//
+void timer_500ms_task (void)
+{
+//	uint8_t buf[RED_FLAG_PAYOUT_BUF_LEN];
+	if (hopper_env.dispense_timeout > 0){
+		LED0_NOT;
+		//FILL_RED_FLAG_SLAVE_FRAME (buf, 0xFF, ACK_MSG, 0);
+		//send_to_uart_buf (buf);
+	}
+	if (hopper_env.communication_timeout > 0){
+		LED0_NOT;
+	}
+}
+//
+void timer_50ms_task (void)
+{	
+	uint8_t i = 0;
+	if (cmd_analyze.spi3_rec_buf_index == 0){
+//		PAout(15) = 0;
+		cmd_analyze.spi3_rec_buf_index = SPI3_ReadWriteByte (0xFF);
+		if (cmd_analyze.spi3_rec_buf_index > 0){
+			for (i = 0; i < cmd_analyze.spi3_rec_buf_index; i++){
+				if (i < CMD_BUF_LEN){
+					cmd_analyze.spi3_rec_buf[i] = SPI3_ReadWriteByte (0xFF);
+				}
+			}
+			i = SPI3_ReadWriteByte (0xFF);
+			my_env.spi3_receive_finished = 1;
+		}
+//		PAout(15) = 1;
+	}
+}
+//
+void timer_5ms_task (void)
+{
+	///////////////////////////////////////////////////////////////////////////////
+	uart_send_task ();
+}
+//
 void timer_1ms_task (void)
 {
+	if (cmd_analyze.uart5_recv_time_out > 0){
+		cmd_analyze.uart5_recv_time_out--;
+		if (cmd_analyze.uart5_recv_time_out == 0){
+			my_env.uart_receive_finished5 = 1;
+		}
+	}
+	if (cmd_analyze.spi3_recv_time_out > 0){
+		cmd_analyze.spi3_recv_time_out--;
+		if (cmd_analyze.spi3_recv_time_out == 0){
+			my_env.spi3_receive_finished = 1;
+		}
+	}
 	if (hopper_env.dispense_timeout > 0){
 		hopper_env.dispense_timeout--;
 		if (hopper_env.dispense_timeout == 0){
@@ -629,19 +758,6 @@ void timer_1ms_task (void)
 		uart_send_buf_head.last_send_timeout--;
 	}
 }
-
-void timer_500ms_task (void)
-{
-//	uint8_t buf[RED_FLAG_PAYOUT_BUF_LEN];
-	if (hopper_env.dispense_timeout > 0){
-		LED0_NOT;
-		//FILL_RED_FLAG_SLAVE_FRAME (buf, 0xFF, ACK_MSG, 0);
-		//send_to_uart_buf (buf);
-	}
-	if (hopper_env.communication_timeout > 0){
-		LED0_NOT;
-	}
-}
 //
 void timer_task (uint32_t time )
 {	
@@ -649,6 +765,12 @@ void timer_task (uint32_t time )
 	static uint32_t sys_time_ctr;
 	if (sys_run_time != time){//1ms 执行一次的任务
 		timer_1ms_task ();
+		if ((sys_run_time % 5 == 0)){//50ms 执行一次的任务
+			timer_5ms_task ();
+		}
+		if ((sys_run_time % 50 == 0)){//50ms 执行一次的任务
+			timer_50ms_task ();
+		}
 		if ((sys_run_time % 500 == 0)){//500ms 执行一次的任务
 			timer_500ms_task ();
 		}
@@ -662,14 +784,6 @@ void timer_task (uint32_t time )
 	}
 	////////////////////////////////////////////////
 	sys_run_time = time;
-}
-void uart_send_task (void)
-{
-	if (uart_send_buf_head.last_send_timeout == 0){
-		if (uart_send_buf_head.used_buf_ctr > 0){
-			send_first_buf_data_use_uart ();
-		}
-	}
 }
 //
 void exception_task (void)
@@ -704,8 +818,6 @@ int main (void)
 		timer_task (tim3_count);
 		////////////////////////////////////////////////////////////////////////////////
 		dispense_task ();
-		///////////////////////////////////////////////////////////////////////////////
-		uart_send_task ();
 		///////////////////////////////////////////////////////////////////////////////
 		exception_task ();
 		///////////////////////////////////////////////////////////////////////////////

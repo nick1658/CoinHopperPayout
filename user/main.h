@@ -25,6 +25,8 @@
 #include "usart2.h"
 #include "usart3.h"
 #include "usart4.h"
+#include "usart5.h"
+#include "spi.h"
 
 
 
@@ -71,6 +73,8 @@
 #define EXT8_INT_SUB 1
 #define EXT11_INT_PREEM INT_GROUP_2
 #define EXT11_INT_SUB 1
+#define UART5_RX_INT_PREEM INT_GROUP_2
+#define UART5_RX_INT_SUB 3
 #define UART4_RX_INT_PREEM INT_GROUP_2
 #define UART4_RX_INT_SUB 3
 #define UART3_RX_INT_PREEM INT_GROUP_2
@@ -97,9 +101,8 @@
 
 
 
-#define LED0 PBout(0)// PB0
-#define LED1 PBout(1)// PB1
-#define LED2 PBout(9)// PB9
+#define LED0 PBout(6)// PB0
+#define LED1 PBout(7)// PB1
 
 #define LED0_NOT LED0 = !LED0
 #define LED1_NOT LED1 = !LED1
