@@ -482,7 +482,7 @@ int red_flag_hopper_res_process (u_red_flag_frame *p_frame)
 //				hopper_env.hopper_offline_flag[p_frame->data.addr] = 0;
 				break;
 			case BUSY_MSG:
-				send_to_uart_flag = 1;
+				//send_to_uart_flag = 1;
 				break;
 			default:break;
 		}
@@ -607,9 +607,9 @@ int red_flag_master_msg_process (u_red_flag_frame *p_frame)
 				break;
 			default:break;
 		}
-	}
-	if (p_frame->data.addr < HOPPER_NUM){
-		send_to_uart_buf (&(p_frame->fill[0]));
+		if (p_frame->data.addr < HOPPER_NUM){
+			send_to_uart_buf (&(p_frame->fill[0]));
+		}
 	}
 	return 0;
 }
@@ -640,7 +640,7 @@ void dispense_task (void)
 	if (my_env.spi3_receive_finished == 1){
 		my_env.spi3_receive_finished = 0;
 		i = 0;
-		while (i < cmd_analyze.spi3_rec_buf_index){
+		while ((i < cmd_analyze.spi3_rec_buf_index) && (cmd_analyze.spi3_rec_buf_index < CMD_BUF_LEN)){
 			p_red_flag_frame = (u_red_flag_frame*)&(cmd_analyze.spi3_rec_buf[i]);
 			red_flag_master_msg_process (p_red_flag_frame);
 			i += RED_FLAG_PAYOUT_BUF_LEN;
